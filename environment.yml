@@ -1,0 +1,19 @@
+name: scGEAR
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # tools
+  - samtools=1.18
+  - umi_tools=1.1.4
+  - sinto=0.9.0
+  
+  # R environment
+  - r-base=4.2.2
+  
+  # Python environment
+  - python=3.9
+  - pip
+  - pip:
+    - cgat==0.6.5
