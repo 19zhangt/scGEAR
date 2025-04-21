@@ -1,0 +1,3 @@
+barcode	split_id	pool
+ACGAGCCGTAAATGTG-1	splited_155	S2
+TGAGGGATCGTACGGC-1	splited_155	S2

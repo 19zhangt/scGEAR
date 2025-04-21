@@ -1,0 +1,4 @@
+chrom	position	ref	base_pileup	barcode	num_reads
+chr17	39760463	T	,	S2#CGAGCCAGTCCGTTAA-1	1
+chr17	39760485	T	,	S2#CGAGCCAGTCCGTTAA-1	1
+chr17	39760495	T	,	S2#CGAGCCAGTCCGTTAA-1	1

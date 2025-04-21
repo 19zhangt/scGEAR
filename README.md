@@ -1,152 +1,131 @@
-# 
+# scGEAR - a computational framework for analyzing multiple RNA-based phenotypes in scRNA-seq data
 
-## Overview
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)  [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)  [![R 4.2.2](https://img.shields.io/badge/R-4.2.2-blue)](https://www.r-project.org/)
 
-**scGEAR** is a computational framework designed to identify transcriptional phenotypes  at a population scale using polyA-enriched single-cell RNA-sequencing data. This tool enables the detection of three distinct RNA phenotypes from single-cell transcriptomic data:
+<p align="center"><img  src="assets/scGEAR.png" width="75%" /></p>
 
-- **Single-cell Gene Expression**
-- **Alternative Polyadenylation (APA)**
-- **RNA Editing Sites**
+Currently, **scGEAR** quantitively analyzed three such phenotypes: gene expression, APA, and RNA editing at a population scale using polyA-enriched single-cell RNA-sequencing data. With its efficient design, **scGEAR** helps researchers uncover insights into RNA processing, and cellular heterogeneity, offering a comprehensive view of transcriptional diversity at the single-cell level.
 
-With its efficient design, **scGEAR** helps researchers uncover insights into RNA processing, and cellular heterogeneity, offering a comprehensive view of transcriptional diversity at the single-cell level.
+**Key Features**:
 
-<p align="center">
-    <img  src="assets/framework.png" width="75%" />
-</p>
-
-
-
-## Key Features
-
-- **Single-Cell Resolution**: work with polyA-enriched single-cell RNA-seq data.
+- **Single-cell resolution**: work with polyA-enriched single-cell RNA-seq data.
 - **Multimodal post-transcriptional modification**: capable of identifying multiple post-transcriptional modification types.
-- **Population-Scale Analysis**: scalable to large datasets, enabling population-level studies of transcriptional phenotypes.
+- **Population-scale analysis**: scalable to large datasets, enabling population-level studies of transcriptional phenotypes.
 
-## Installation
+## Table of Contents
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Data Requirements](#data-requirements)
+- [Output](#output)
 
-To use **scGEAR**, clone the repository and install the required dependencies.
-
-### Requirements
-
-- Python (>=2.7)
-- R (>=4.10)
-- [samtools](https://www.htslib.org/)
-- [umitools](https://umi-tools.readthedocs.io/en/latest/QUICK_START.html)
-- [sinto](https://timoast.github.io/sinto/)
-
-### Installation Steps
+## Installation 🔧
 
 1. Clone this repository:
-    ```bash
-    git clone https://github.com/dingruofan/scGEAR.git
-    cd scGEAR
-    ```
+   ```bash
+   git clone https://github.com/lilab-bioinfo/scGEAR.git
+   cd scGEAR
+   ```
 
 2. Install dependency with mamba
-    ```bash
-    conda install -n base mamba
-    mamba env create -f environment.yml
-    conda activate scGEAR
-    ```
+   ```bash
+   conda install -n base mamba
+   mamba env create -f environment.yml
+   conda activate scGEAR
+   ```
 
+## 🚀 Quick Start
 
-## Usage
+**scGEAR** provides a command-line interface (CLI) for ease of use. Below is a basic example of how to analyze single-cell RNA-seq data.
 
-**scGEAR** provides a command-line interface (CLI) for ease of use. Below is a basic example of how to run **scGEAR** to analyze single-cell RNA-seq data.
-
-### Example
-
+### For gene expression
 ```bash
-Rscript scGEAR.R \
-  --cellinfo cell_info.txt \
-  --cellrangerDir cellranger \
-  --genome_fa genome.fa \
-  --mode ed \
-  --REDIportal_tab REDIportal_noRSid.tab.gz \
-  --py2_path envs/py2.7/bin/python \
-  --read_strand 1 \
+Rscript scGEAR.R --gear expression \
+  --cellinfo example/cell_annotation.csv \
+  --baminfo example/bam_list.csv \
   --threads 50 \
-  --umitools_path /home/dingruofan/anaconda3/envs/py3.9/bin/umi_tools \
-  --samtools_path /usr/bin/samtools \
-  --sinto_path /home/dingruofan/anaconda3/envs/py3.9/bin/sinto \
-  --outdir /media/bora_A/dingruofan/2023-10-16_RNA_editing_project/tmp
+  --outdir example/output
 ```
 
-### Parameters
+### For poly(A) sites and alternative polyadenylation events
+```bash
+Rscript scGEAR.R --gear apa \
+  --cellinfo example/cell_annotation.csv \
+  --baminfo example/bam_list.csv \
+  --genome_fa xxx/hg38/genome.fa \
+  --read_strand 1 \
+  --threads 50 \
+  --outdir example/output
+```
 
-scGEAR starts with the outputs from **cellranger**, user need to specify two parameters for scGEAR 
+### For RNA editing sites
+```bash
+Rscript scGEAR.R --gear editing \
+  --cellinfo example/cell_annotation.csv \
+  --baminfo example/bam_list.csv \
+  --genome_fa xxx/hg38/genome.fa \
+  --REDIportal_anno ref/REDIportal_noRSid.tab.gz \
+  --py2_path /usr/bin/python2 \
+  --read_strand 1 \
+  --threads 50 \
+  --outdir example/output
+```
 
-- `--cellinfo`: path to the cell information table in TSV format, containing four columns with the following column names: `POOL`, `cell_id`, `cluster`, `ind`, such as:
+### For all phenotypes
+```bash
+Rscript scGEAR.R --gear all \
+  --cellinfo example/cell_annotation.csv \
+  --baminfo example/bam_list.csv \
+  --genome_fa xxx/hg38/genome.fa \
+  --REDIportal_anno ref/REDIportal_noRSid.tab.gz \
+  --py2_path /usr/bin/python2 \
+  --read_strand 1 \
+  --threads 50 \
+  --outdir example/output
+```
 
-  | POOL   | cell_id            | cluster | ind      |
-  | ------ | ------------------ | ------- | -------- |
-  | POOL_1 | AAACCCACACCATTCC-1 | CD4     | sample_1 |
-  | POOL_1 | AAACCCACATCCGATA-1 | CD4     | sample_2 |
-  | POOL_2 | AAACCCATCTCTGCTG-1 | Mono    | sample_1 |
-  | POOL_2 | AAACGAACATTGAGGG-1 | Mono    | sample_2 |
+## Data Requirements 📂
 
-- `--cellrangerDir`: the output directory of cellranger, including the results of the cellrange for each pool. click [here](assets/cellranger_dir.png) to view an example of the directory structure.
+scGEAR starts with the outputs from **cellranger**, user need to specify two parameters for scGEAR
+
+- `--mode`: Specify the analysis mode (`expression`, `apa`, `editing`, `all`).
+- `--cellinfo`: path to the cell information table in CSV format, containing four columns with the following column names: `pool`, `barcode`, `cell_type`, `donor`, such as:
+  ```text
+  pool,barcode,cell_type,donor
+  S1,AAACCCACACCATTCC-1,CD4,ind1
+  S1,AAACCCACATCCGATA-1,CD8,ind2
+  S2,AAACCCATCTCTGCTG-1,NK,ind3
+  S2,AAACGAACATTGAGGG-1,Mono,ind4
+  ```
+
+- `--baminfo`: the output directory of cellranger bam files.
+  ```text
+  pool,bamfile
+  S1,data/cellranger/S1/outs/possorted_genome_bam.bam
+  S2,data/cellranger/S2/outs/possorted_genome_bam.bam
+  ```
 
 - `--genome_fa`: genome sequence file in fasta format.
-
 - `--outdir`: Path to the output directory where results will be saved.
 
-- `--mode`: Specify the analysis mode (`exp`, `apa`, `ed`, `all`).
 
-### Running Gene Expression Analysis
-
-To perform gene expression analysis:
-
-```bash
-python scgear.py --input data/single_cell_data.csv --output results/ --mode gene_expression
-```
-
-### Running Alternative Polyadenylation Analysis
-
-To identify alternative polyadenylation events:
-
-```bash
-python scgear.py --input data/single_cell_data.csv --output results/ --mode alternative_polyadenylation
-```
-
-### Running RNA Editing Site Identification
-
-To detect RNA editing sites:
-
-```bash
-Rscript /media/bora_A/dingruofan/2023-10-16_RNA_editing_project/src/scGEAR/scGEAR.R \
-  --cellinfo /media/bora_A/dingruofan/2023-10-16_RNA_editing_project/src/scGEAR/test_real/cell_info.txt \
-  --cellrangerDir /media/pacific/share/Datasets/Immune_data/Single-cell-immune-QTL/Aquino2023Nature/scRNAseq/cellranger \
-  --genome_fa /media/bora_A/zhangt/src/hg38_cellranger_index/fasta/genome.fa \
-  --mode ed \
-  --REDIportal_tab /media/bora_A/dingruofan/2023-10-16_RNA_editing_project/src/scGEAR/ref/REDIportal_noRSid.tab.gz \
-  --py2_path /home/dingruofan/anaconda3/envs/py2.7/bin/python \
-  --read_strand 1 \
-  --threads 50 \
-  --umitools_path /home/dingruofan/anaconda3/envs/py3.9/bin/umi_tools \
-  --samtools_path /usr/bin/samtools \
-  --sinto_path /home/dingruofan/anaconda3/envs/py3.9/bin/sinto \
-  --outdir /media/bora_A/dingruofan/2023-10-16_RNA_editing_project/tmp
-```
-
-## Output
+## Output 🖨️
 
 The results will be saved in the specified output directory, and they include matrix of multimodal molecular phenotypes for each cell cluster, where the columns represent sample IDs and the rows represent phenotype names.
 
-## License
-
-This project is licensed under the GPL License - see the [LICENSE](LICENSE.md) file for details.
-
-## Acknowledgments
-
-Thanks to the following individuals for their contributions to this project:
-
-- Lei Li: Provided design ideas and guidance throughout the project..
-- Ting zhang: Assisted in the implementation of the APA and gene expression analysis module.
-- Ruofan Ding: Assisted in the implementation of the RNA editing site analysis module and tool deployment .
+- Normalized gene expression
+- poly(A) sites and APA usage matrices
+- RNA editing sites and RNA editing levels
 
 
+## Getting help 📬
+
+If you encounter a bug or have a feature request, please open an [Issues](https://github.com/lilab-bioinfo/scGEAR/issues).
+
+If you would like to discuss questions related to single-cell analysis, you can open a [Discussions](https://github.com/lilab-bioinfo/scGEAR/discussions).
+
+
+## Release Notes​​ 🎉
+
+v1.0.0 (2025-04-21): Initial release with analysis pipeline
 
 ---
-
-We hope **scGEAR** helps you advance your research on single-cell transcriptome data analysis. Happy coding!

@@ -14,153 +14,67 @@ suppressPackageStartupMessages({
     }
 })
 
-#' Initialize and configure command line arguments
-#' @return ArgumentParser object with configured parameters
-initialize_parser <- function() {
-    parser <- ArgumentParser(description = "scGEAR: a population-scale computational framework for identifying multiple 
-                             molecular phenotypes from polyA-enriched single-cell transcriptome data")
-    
-    # Required parameters
-    parser$add_argument("--cellinfo", type = "character", required = TRUE,
-                        help = "Unique cell barcodes assigned to each sample within each cluster.")
-    parser$add_argument("--cellrangerDir", type = "character", required = TRUE,
-                        help = "Directory containing Cell Ranger outputs for each pool.")
-    
-    # # Tool paths with validation
-    # parser$add_argument("--umitools_path", type = "character", default = "umi_tools",
-    #                     help = "Path to umi_tools executable.")
-    # parser$add_argument("--samtools_path", type = "character", default = "/usr/bin/samtools",
-    #                     help = "Path to samtools executable.")
-    # parser$add_argument("--sinto_path", type = "character", default = "sinto",
-    #                     help = "Path to sinto executable.")
-    
-    # Reference files
-    parser$add_argument("--genome_fa", type = "character", required = TRUE,
-                        help = "Path to genome FASTA file.")
-    parser$add_argument("--REDIportal_tab", type = "character", required = TRUE,
-                        help = "Path to REDIportal annotation file (tab.gz format).")
-    
-    # Processing parameters
-    parser$add_argument("--read_strand", type = "integer", choices = c(0, 1), default = 1,
-                        help = "Strand orientation (0=unstranded, 1=stranded)")
-    parser$add_argument("--mode", type = "character", choices = c("exp", "apa", "ed", "all"), default = "exp",
-                        help = "Processing mode: exp (expression), apa (alternative polyadenylation), ed (RNA editing), all")
-    parser$add_argument("--threads", type = "integer", default = 4,
-                        help = "Number of parallel processing threads")
-    parser$add_argument("--outdir", type = "character", required = TRUE,
-                        help = "Output directory path")
-    
-    return(parser)
+
+# Defining the conversion function
+convert_logical <- function(x) {
+    x_upper <- toupper(x)
+    if (x_upper %in% c("TRUE", "T")) {
+        return(TRUE)
+    } else if (x_upper %in% c("FALSE", "F")) {
+        return(FALSE)
+    } else {
+        stop("The parameter must be TRUE/T or FALSE/F")
+    }
 }
+
 
 #' Initialize and configure command line arguments
 #' @return ArgumentParser object with configured parameters
 initialize_parser <- function() {
-    parser <- ArgumentParser(description = "scGEAR: A Population-scale Computational Framework for identifying multiple transcriptional phenotypes from polyA-enriched Single-cell Transcriptome Data")
+    parser <- ArgumentParser(description = "scGEAR: a computational framework for analyzing multiple RNA-based phenotypes in scRNA-seq data")
+    
+    parser$add_argument("--gear", type = "character", choices = c("expression", "apa", "editing", "all"), default = "expression",
+                        help = "Processing mode")
     
     # Required parameters
     parser$add_argument("--cellinfo", type = "character", required = TRUE,
                         help = "Unique cell barcodes assigned to each sample within each cluster.")
-    parser$add_argument("--cellrangerDir", type = "character", required = TRUE,
+    parser$add_argument("--baminfo", type = "character", required = TRUE,
                         help = "Directory containing Cell Ranger outputs for each pool.")
+    parser$add_argument("--remove_duplicates", type=convert_logical, default = FALSE,
+                        help = "Logical parameters, accept TRUE/T or FALSE/F (case insensitive).")
     
-    # Tool paths with validation
-    parser$add_argument("--umitools_path", type = "character", default = "umi_tools",
-                        help = "Path to umi_tools executable.")
-    parser$add_argument("--samtools_path", type = "character", default = "/usr/bin/samtools",
-                        help = "Path to samtools executable.")
-    parser$add_argument("--sinto_path", type = "character", default = "sinto",
-                        help = "Path to sinto executable.")
-    
-    # Reference files
+    # Reference file
     parser$add_argument("--genome_fa", type = "character", required = TRUE,
                         help = "Path to genome FASTA file.")
-    parser$add_argument("--REDIportal_tab", type = "character", required = TRUE,
-                        help = "Path to REDIportal annotation file (tab.gz format).")
     
     # Processing parameters
+    parser$add_argument("--REDIportal_anno", type = "character", required = TRUE,
+                        help = "Path to REDIportal annotation file (tab.gz format).")
     parser$add_argument("--read_strand", type = "integer", choices = c(0, 1), default = 1,
                         help = "Strand orientation (0=unstranded, 1=stranded)")
-    parser$add_argument("--mode", type = "character", choices = c("exp", "apa", "ed", "all"), default = "exp",
-                        help = "Processing mode: exp (expression), apa (alternative polyA), ed (RNA editing), all")
+    
     parser$add_argument("--threads", type = "integer", default = 4,
                         help = "Number of parallel processing threads")
     parser$add_argument("--outdir", type = "character", required = TRUE,
                         help = "Output directory path")
-    
     return(parser)
 }
 
-# Main execution flow ---------------------------------------------------------
-main <- function() {
-    # Parse command line arguments
-    parser <- initialize_parser()
-    args <- parser$parse_args()
-    
-    
-    args <- list(
-        cellinfo = normalizePath(cellinfo),
-        cellrangerDir = normalizePath(cellrangerDir),
-        umitools_path = umitools_path,
-        samtools_path = samtools_path,
-        py2_path = py2_path,
-        sinto_path = sinto_path,
-        genome_fa = genome_fa,
-        REDIportal_tab = REDIportal_tab,
-        read_strand = as.integer(read_strand),
-        mode = mode,
-        threads = as.integer(threads),
-        outdir = outdir
-    )
-    
-    
-    # # Validate tool paths
-    # validate_executable <- function(path, name) {
-    #     if (!file.exists(path)) {
-    #         stop("Path for ", name, " not found: ", path)
-    #     }
-    #     if (file.access(path, 1) == -1) {
-    #         stop("No execute permission for ", name, " at: ", path)
-    #     }
-    # }
-    # 
-    # validate_executable(args$samtools_path, "samtools")
-    # validate_executable(args$umitools_path, "umi_tools")
-    # validate_executable(args$sinto_path, "sinto")
-    
-    # Create output directory
-    if (!dir.exists(args$outdir)) {
-        message("Creating output directory: ", args$outdir)
-        dir.create(args$outdir, recursive = TRUE, showWarnings = FALSE)
-    }
-    
-    # Load processing functions
-    script_dir <- get_script_directory()
-    functions_path <- file.path(script_dir, "src", "functions.R")
-    if (!file.exists(functions_path)) {
-        stop("Functions script not found at: ", functions_path)
-    }
-    source(functions_path)
-    
-    # Load and validate input data
-    validate_input_file(args$cellinfo, "Cell information file")
-    validate_input_dir(args$cellrangerDir, "Cell Ranger directory")
-    
-    # Process input data
-    bam_data <- load_bam_data(args$cellinfo, args$cellrangerDir)
-    
-    # Main processing based on mode
-    process_mode(args$mode, bam_data, args)
-}
 
-#' Retrieve script directory path
-#' @return Absolute path to script directory
-get_script_directory <- function() {
-    cmd_args <- commandArgs(trailingOnly = FALSE)
-    script_path <- sub("^--file=", "", cmd_args[grepl("^--file=", cmd_args)])
-    if (length(script_path) == 0) return(".")
-    return(normalizePath(dirname(script_path)))
-}
+args <- list(
+    gear = "apa",
+    cellinfo = "example/cell_annotation.csv",
+    baminfo = "example/bam_list.csv",
+    remove_duplicates = TRUE,
+    genome_fa = "/media/iceland/share/Index/Genome_index/Human_hg38/GRCh38.primary_assembly.genome.fa",
+    REDIportal_anno = "ref/REDIportal_noRSid.tab.gz",
+    py2_path = "python2",
+    read_strand = as.integer("1"),
+    threads = as.integer("4"),
+    outdir = "example/output"
+)
+
 
 #' Validate input file existence
 #' @param path Path to validate
@@ -180,55 +94,103 @@ validate_input_dir <- function(path, name) {
     }
 }
 
-#' Load and validate BAM data
-#' @param cellinfo_path Path to cell information file
-#' @param cellranger_dir Path to Cell Ranger directory
-#' @return List containing validated BAM data
-load_bam_data <- function(cellinfo_path, cellranger_dir) {
-    message("Loading cell information from: ", cellinfo_path)
-    bam_anno <- fread(cellinfo_path)
-    
-    if (nrow(bam_anno) == 0) {
-        stop("Empty cell information file: ", cellinfo_path)
-    }
-    
-    message("Validating BAM files in: ", cellranger_dir)
-    # Add BAM file validation logic here
-    
-    return(list(
-        bam_anno = bam_anno,
-        cell_count = nrow(bam_anno)
-    ))
-}
 
 #' Execute processing based on selected mode
-#' @param mode Processing mode
+#' @param gear Processing mode
 #' @param bam_data List containing BAM data
 #' @param args Parsed command line arguments
-process_mode <- function(mode, bam_data, args) {
+process_mode <- function(gear, bam_data, args) {
     log_file <- file.path(args$outdir, "processing_log.txt")
     
     # Common preprocessing steps
-    if (mode %in% c("ed", "all")) {
-        run_duplicate_removal(bam_data, args, log_file)
-        run_bam_processing(bam_data, args, log_file)
+    if (gear %in% c("editing", "all", "apa")) {
+        if (system2("umi_tools", args = "--version", stdout = NULL, stderr = NULL) != 0) {
+            stop("umi_tools is not installed! Please install via pip: pip install umi_tools")
+        }
+        if (system2("samtools", args = "--version", stdout = NULL, stderr = NULL) != 0) {
+            stop("samtools is not installed! Please install via Conda: conda install bioconda::samtools")
+        }
+        
+        if(args$remove_duplicates){
+            ## remove duplicates for each raw pooled bam file
+            bam_data$bam_anno <- remove_dups_pools2(bam_anno_ = bam_data$bam_anno, 
+                                                    parThreads_ = args$threads, 
+                                                    out_path = args$outdir, log_ = log_file)
+        }else{
+            colnames(bam_data$bam_anno)[2] <- "bam_dedup_path"
+        }
     }
-    
+
     # Mode-specific processing
-    switch(mode,
-           "ed" = {
+    switch(gear,
+           "editing" = {
+               args$outdir <- paste0(args$outdir, "/", args$gear)
+               # Load processing functions
+               functions_path <- file.path("src", "RNAediting.R")
+               if (!file.exists(functions_path)) {
+                   stop("Functions script not found at: ", functions_path)
+               }
+               source(functions_path)
                run_editing_analysis(bam_data, args, log_file)
            },
            "apa" = {
+               # Load processing functions
+               functions_path <- file.path("src", "apa.R")
+               if (!file.exists(functions_path)) {
+                   stop("Functions script not found at: ", functions_path)
+               }
+               source(functions_path)
+               
+               args$outdir <- paste0(args$outdir, "/", args$gear)
                run_apa_analysis(bam_data, args, log_file)
            },
-           "all" = {
-               run_full_analysis(bam_data, args, log_file)
-           },
            "exp" = {
+               args$outdir <- paste0(args$outdir, "/", args$gear)
                run_expression_analysis(bam_data, args, log_file)
+           },
+           "all" = {
+               # Load processing functions
+               functions_path <- file.path("src", "functions.R")
+               if (!file.exists(functions_path)) {
+                   stop("Functions script not found at: ", functions_path)
+               }
+               source(functions_path)
+               
+               dir_output <- args$outdir
+               args$outdir <- paste0(dir_output, "/expression")
+               run_expression_analysis(bam_data, args, log_file)
+               
+               args$outdir <- paste0(dir_output, "/apa")
+               run_apa_analysis(bam_data, args, log_file)
+               
+               args$outdir <- paste0(dir_output, "/editing")
+               run_editing_analysis(bam_data, args, log_file)
            }
     )
+}
+
+# Main execution flow ---------------------------------------------------------
+main <- function() {
+    # Parse command line arguments
+    parser <- initialize_parser()
+    args <- parser$parse_args()
+    
+    # Create output directory
+    if (!dir.exists(args$outdir)) {
+        message("Creating output directory: ", args$outdir)
+        dir.create(args$outdir, recursive = TRUE, showWarnings = FALSE)
+    }
+    
+    # Load and validate input data
+    validate_input_file(args$cellinfo, "Cell information file")
+    validate_input_file(args$baminfo, "Cell Ranger bam files")
+    
+    # Process input data
+    source("src/base.R")
+    bam_data <- load_bam_cell_anno3(args$cellinfo, args$baminfo, check_bam = TRUE)
+    
+    # Main processing based on mode
+    process_mode(args$gear, bam_data, args)
 }
 
 # Execute main function

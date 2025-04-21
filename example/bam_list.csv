@@ -1,0 +1,3 @@
+pool,bamfile
+S1,data/cellranger/S1/outs/possorted_genome_bam.bam
+S2,data/cellranger/S2/outs/possorted_genome_bam.bam

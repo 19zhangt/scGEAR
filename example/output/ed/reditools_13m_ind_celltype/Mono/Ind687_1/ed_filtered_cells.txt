@@ -1,0 +1,5 @@
+phenotype_id	chrom	position	strand	ed_type	cell_num	cov_reads	edited_reads	ed_level
+chr17_39760397_A_G_-	chr17	39760397	-	AG	1	1	0	0
+chr17_39760430_A_G_-	chr17	39760430	-	AG	1	1	0	0
+chr17_39760436_A_G_-	chr17	39760436	-	AG	1	1	0	0
+chr17_39841848_T_C_+	chr17	39841848	+	TC	1	1	0	0

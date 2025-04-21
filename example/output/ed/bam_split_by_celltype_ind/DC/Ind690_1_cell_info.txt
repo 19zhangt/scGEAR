@@ -1,0 +1,2 @@
+barcode	split_id	pool
+TACTTACAGACGCTTT-1	splited_173	S2

@@ -1,0 +1,2 @@
+barcode	split_id	pool
+TGTGCGGGTACACGTT-1	splited_84	S1

@@ -1,0 +1,2 @@
+chrom	position	ref	base_pileup	barcode	num_reads
+chr17	39764299	T	.	S2#GTTCATTAGTTGAGAT-1	1
