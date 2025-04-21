@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)  [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)  [![R 4.2.2](https://img.shields.io/badge/R-4.2.2-blue)](https://www.r-project.org/)
 
-<p align="center"><img  src="assets/scGEAR.png" width="75%" /></p>
+<p align="center"><img  src="assets/scGEAR.png" width="60%" /></p>
 
 Currently, **scGEAR** quantitively analyzed three such phenotypes: gene expression, APA, and RNA editing at a population scale using polyA-enriched single-cell RNA-sequencing data. With its efficient design, **scGEAR** helps researchers uncover insights into RNA processing, and cellular heterogeneity, offering a comprehensive view of transcriptional diversity at the single-cell level.
 
@@ -12,11 +12,13 @@ Currently, **scGEAR** quantitively analyzed three such phenotypes: gene expressi
 - **Multimodal post-transcriptional modification**: capable of identifying multiple post-transcriptional modification types.
 - **Population-scale analysis**: scalable to large datasets, enabling population-level studies of transcriptional phenotypes.
 
+---
 ## Table of Contents
 - [Installation](#installation-)
 - [Quick Start](#quick-start-)
 - [Data Requirements](#data-requirements-)
 - [Output](#output-)
+
 
 ## Installation 🔧
 
