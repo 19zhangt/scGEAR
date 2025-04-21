@@ -13,10 +13,10 @@ Currently, **scGEAR** quantitively analyzed three such phenotypes: gene expressi
 - **Population-scale analysis**: scalable to large datasets, enabling population-level studies of transcriptional phenotypes.
 
 ## Table of Contents
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Data Requirements](#data-requirements)
-- [Output](#output)
+- [Installation](#installation-)
+- [Quick Start](#quick-start-)
+- [Data Requirements](#data-requirements-)
+- [Output](#output-)
 
 ## Installation 🔧
 
@@ -33,7 +33,7 @@ Currently, **scGEAR** quantitively analyzed three such phenotypes: gene expressi
    conda activate scGEAR
    ```
 
-## 🚀 Quick Start
+## Quick Start 🚀
 
 **scGEAR** provides a command-line interface (CLI) for ease of use. Below is a basic example of how to analyze single-cell RNA-seq data.
 
