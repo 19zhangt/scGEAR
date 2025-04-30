@@ -1,2 +1,0 @@
-barcode	split_id	pool
-CTCACACTCATCACCC-1	splited_168	S2

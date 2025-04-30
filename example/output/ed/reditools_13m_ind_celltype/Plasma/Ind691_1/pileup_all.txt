@@ -1,1 +1,0 @@
-chr17	39841848	T	2	..	FF	CCTCAGTGTGACTACT-1,CCTCAGTGTGACTACT-1	POOL1:0:1:unknow_flowcell:0,POOL1:0:1:unknow_flowcell:0

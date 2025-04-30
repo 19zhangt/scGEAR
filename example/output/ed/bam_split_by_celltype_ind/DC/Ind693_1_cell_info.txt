@@ -1,3 +1,0 @@
-barcode	split_id	pool
-GCACATATCGTGACAT-1	splited_169	S2
-GCCTCTACATCGATGT-1	splited_169	S2

@@ -1,2 +1,0 @@
-barcode	split_id	pool
-CATTCTAGTAACATAG-1	splited_72	S1

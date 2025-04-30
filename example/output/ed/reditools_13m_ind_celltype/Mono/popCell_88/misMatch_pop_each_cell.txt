@@ -1,2 +1,0 @@
-chrom	position	strand	phenotype_id	barcode	misMatch_reads	cov_reads	misMatch_prop
-chr17	39919045	-	chr17_39919045_A_G_-	S1#GACTATGTCGTCAAAC-1	0	1	0

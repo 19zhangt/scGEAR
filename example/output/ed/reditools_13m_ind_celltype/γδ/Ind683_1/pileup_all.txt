@@ -1,1 +1,0 @@
-chr17	39764299	T	1	.	F	GTTCATTAGTTGAGAT-1	POOL1:0:1:unknow_flowcell:0

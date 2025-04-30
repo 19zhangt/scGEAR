@@ -1,4 +1,0 @@
-type	time
-combine_bam_celltype_ind	0.679799294471741
-detect_editing	1.032552754879
-summary_ed_cov	39.8579362471898

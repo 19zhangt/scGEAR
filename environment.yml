@@ -1,19 +1,24 @@
-name: scGEAR
+name: SERA
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  # tools
-  - samtools=1.18
-  - umi_tools=1.1.4
-  - sinto=0.9.0
+  # R packages
+  - r-base=4.2.2            # R programming language
   
-  # R environment
-  - r-base=4.2.2
-  
-  # Python environment
-  - python=3.9
-  - pip
+  # Python packages
+  - python=3.9               # Python interpreter
+  - pip=23.0.1
   - pip:
-    - cgat==0.6.5
+    - pysam==0.21.0           # SAM/BAM file processing
+    - tqdm==4.65.0            # Progress bars
+    - pandas==2.0.3           # Data analysis toolkit
+    - biopython==1.85         # Bioinformatics utilities
+
+  # Command-line tools
+  - subread                # Contains featureCounts
+  - bedtools=2.30.0        # Genome arithmetic toolkit
+  - sinto=0.9.0            # Single-cell fragment file analysis
+  - umi_tools=1.1.4        # UMI handling utilities
+  - samtools=1.18          # SAM/BAM processing

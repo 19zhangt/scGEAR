@@ -1,3 +1,0 @@
-chrom	position	strand	phenotype_id	barcode	misMatch_reads	cov_reads	misMatch_prop
-chr17	39841865	+	chr17_39841865_T_C_+	S2#TCATTACGTTGTTTGG-1	0	2	0
-chr17	39841879	+	chr17_39841879_T_C_+	S2#TCATTACGTTGTTTGG-1	0	1	0
