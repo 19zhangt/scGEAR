@@ -1,16 +1,16 @@
-## SERA - a computational framework for analyzing multiple RNA-based phenotypes in scRNA-seq data
+## **SERA** - A Computational Framework for Analyzing Multiple RNA-Based Phenotypes in scRNA-Seq Data
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)  [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)  [![R 4.2.2](https://img.shields.io/badge/R-4.2.2-blue)](https://www.r-project.org/)
 
 <p align="center"><img  src="assets/SERA.png" width="60%" /></p>
 
-Currently, **SERA** quantitively analyzed three such phenotypes: gene expression, APA, and RNA editing at a population scale using polyA-enriched single-cell RNA-sequencing data. With its efficient design, **SERA** helps researchers uncover insights into RNA processing, and cellular heterogeneity, offering a comprehensive view of transcriptional diversity at the single-cell level.
+Currently, **SERA** quantitatively analyzes three RNA-based phenotypes at single-cell resolution: gene expression, alternative polyadenylation (APA), and RNA editing, using polyA-enriched single-cell RNA-sequencing data. With its efficient design, SERA enables researchers to uncover insights into RNA processing and cellular heterogeneity, providing a comprehensive view of transcriptional diversity at the single-cell level.
 
 **Key Features**:
 
-- **Single-cell resolution**: work with polyA-enriched single-cell RNA-seq data.
-- **Multimodal post-transcriptional modification**: capable of identifying multiple post-transcriptional modification types.
-- **Population-scale analysis**: scalable to large datasets, enabling population-level studies of transcriptional phenotypes.
+- **Single-cell resolution**: Works with polyA-enriched single-cell RNA-seq data.
+- **Multimodal post-transcriptional modification**: Identifies multiple RNA modification types (e.g., APA and RNA editing).
+- **Population-scale analysis**: Scalable to large datasets for population-level studies.
 
 ---
 ## Table of Contents
@@ -28,7 +28,7 @@ Currently, **SERA** quantitively analyzed three such phenotypes: gene expression
    cd SERA
    ```
 
-2. Install dependency with mamba
+2. Install dependencies with Mamba
    ```bash
    conda install -n base mamba
    mamba env create -f environment.yml
@@ -82,10 +82,10 @@ Rscript SERA.R --mode all \
 
 ## Data Requirements 📂
 
-SERA starts with the outputs from **cellranger**, user need to specify two parameters for SERA
+SERA requires outputs from **Cell Ranger** (10x Genomics). Users must specify the following parameters:
 
 - `--mode`: Specify the analysis mode (`expression`, `apa`, `editing`, `all`).
-- `--cellinfo`: path to the cell information table in CSV format, containing four columns with the following column names: `pool`, `barcode`, `cell_type`, `donor`, such as:
+- `--cellinfo`: Path to a CSV file containing cell metadata with four columns: `pool`, `barcode`, `cell_type`, and `donor`. Example:
   ```text
   pool,barcode,cell_type,donor
   S1,AAACCCACACCATTCC-1,CD4,ind1
@@ -107,7 +107,7 @@ SERA starts with the outputs from **cellranger**, user need to specify two param
 
 ## Output 🖨️
 
-The results will be saved in the specified output directory, and they include matrix of multimodal molecular phenotypes for each cell type, where the columns represent sample IDs and the rows represent phenotype names.
+The output directory will contain **matrices** of multimodal molecular phenotypes for each cell type, with rows representing phenotypes and columns representing sample IDs.
 
 - Normalized gene expression
 - poly(A) sites and APA usage matrices
@@ -116,13 +116,12 @@ The results will be saved in the specified output directory, and they include ma
 
 ## Getting help 📬
 
-If you encounter a bug or have a feature request, please open an [Issues](https://github.com/lilab-bioinfo/SERA/issues).
+To report a bug or request a feature, please [open an Issue](https://github.com/lilab-bioinfo/SERA/issues).
 
-If you would like to discuss questions related to single-cell analysis, you can open a [Discussions](https://github.com/lilab-bioinfo/SERA/discussions).
-
+For general discussions about single-cell analysis, please [start a Discussion](https://github.com/lilab-bioinfo/SERA/discussions).
 
 ## Release Notes​​ 🎉
 
-v1.0.0 (2025-04-21): Initial release with analysis pipeline
+v1.0.0 (2025-04-21): Initial release with support for gene expression, APA, and RNA editing analysis.
 
 ---
