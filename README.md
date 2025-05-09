@@ -30,7 +30,7 @@ Currently, **SERA** quantitatively analyzes three RNA-based phenotypes at single
 
 2. Install dependencies with Mamba
    ```bash
-   conda install -n base mamba
+   conda install -n base -c conda-forge mamba
    mamba env create -f environment.yml
    conda activate SERA
    ```
