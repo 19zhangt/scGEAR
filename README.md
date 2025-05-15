@@ -113,7 +113,7 @@ SERA requires outputs from **Cell Ranger** (10x Genomics). Users must specify th
 - `--outdir`: Path to the output directory where results will be saved.
 
 
-## Output🖨️
+## Output
 
 The output directory will contain **matrices** of multimodal molecular phenotypes for each cell type, with rows representing phenotypes and columns representing sample IDs.
 
