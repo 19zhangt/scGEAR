@@ -54,8 +54,6 @@ def count_polyA_reads(input_bam_file):
 	tmp_bam_file.close()
 	return(polyA_positions)
 
-
-
 # Check the execution mode
 if __name__ == "__main__":
 	# Get the input file name

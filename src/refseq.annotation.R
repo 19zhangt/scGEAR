@@ -1,19 +1,4 @@
 
-packages <- c("rtracklayer", "tidyverse")
-for (pkg in packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    if (pkg == "rtracklayer") {
-      if (!requireNamespace("BiocManager", quietly = TRUE)) {
-        install.packages("BiocManager")
-      }
-      BiocManager::install("rtracklayer")
-    } else {
-      install.packages(pkg)
-    }
-  }
-}
-
-
 library(rtracklayer)
 library(tidyverse)
 

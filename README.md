@@ -17,7 +17,7 @@ Currently, **SERA** quantitatively analyzes three RNA-based phenotypes at single
 - [Installation](#installation-)
 - [Quick Start](#quick-start-)
 - [Data Requirements](#data-requirements-)
-- [Output](#output-)
+- [Output](#output)
 
 
 ## Installation 🔧
@@ -33,6 +33,14 @@ Currently, **SERA** quantitatively analyzes three RNA-based phenotypes at single
    conda install -n base -c conda-forge mamba
    mamba env create -f environment.yml
    conda activate SERA
+   Rscript install_dependencies.R  ## If dependencies are not installed, please run this code.
+   ```
+
+3. Download genome
+   ```bash
+   wget -P reference/ ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_46/GRCh38.primary_assembly.genome.fa.gz
+   gunzip reference/GRCh38.primary_assembly.genome.fa.gz
+   samtools faidx reference/GRCh38.primary_assembly.genome.fa
    ```
 
 ## Quick Start 🚀
@@ -44,18 +52,18 @@ Currently, **SERA** quantitatively analyzes three RNA-based phenotypes at single
 Rscript SERA.R --mode expression \
   --cellinfo example/cell_annotation.csv \
   --baminfo example/bam_list.csv \
-  --threads 50 \
-  --outdir example/output
+  --threads 10 \
+  --outdir example/result
 ```
 
 ### For poly(A) sites and alternative polyadenylation events
 ```bash
-Rscript SERA.R --mode apa \
+Rscript SERA.R --mode APA \
   --cellinfo example/cell_annotation.csv \
   --baminfo example/bam_list.csv \
-  --genome_fa xxx/hg38/genome.fa \
-  --threads 50 \
-  --outdir example/output
+  --genome_fa reference/GRCh38.primary_assembly.genome.fa \
+  --threads 10 \
+  --outdir example/result
 ```
 
 ### For RNA editing sites
@@ -63,10 +71,10 @@ Rscript SERA.R --mode apa \
 Rscript SERA.R --mode editing \
   --cellinfo example/cell_annotation.csv \
   --baminfo example/bam_list.csv \
-  --genome_fa xxx/hg38/genome.fa \
-  --py2_path /usr/bin/python2 \
-  --threads 50 \
-  --outdir example/output
+  --genome_fa reference/GRCh38.primary_assembly.genome.fa \
+  --remove_duplicates TRUE \
+  --threads 10 \
+  --outdir example/result
 ```
 
 ### For all phenotypes
@@ -74,10 +82,10 @@ Rscript SERA.R --mode editing \
 Rscript SERA.R --mode all \
   --cellinfo example/cell_annotation.csv \
   --baminfo example/bam_list.csv \
-  --genome_fa xxx/hg38/genome.fa \
-  --py2_path /usr/bin/python2 \
-  --threads 50 \
-  --outdir example/output
+  --genome_fa reference/GRCh38.primary_assembly.genome.fa \
+  --remove_duplicates TRUE \
+  --threads 10 \
+  --outdir example/result
 ```
 
 ## Data Requirements 📂
@@ -105,13 +113,18 @@ SERA requires outputs from **Cell Ranger** (10x Genomics). Users must specify th
 - `--outdir`: Path to the output directory where results will be saved.
 
 
-## Output 🖨️
+## Output🖨️
 
 The output directory will contain **matrices** of multimodal molecular phenotypes for each cell type, with rows representing phenotypes and columns representing sample IDs.
 
-- Normalized gene expression
-- poly(A) sites and APA usage matrices
-- RNA editing sites and RNA editing levels
+- ​​Normalized Gene Expression Matrices​​
+  - ​Directory​​: `example/result/expression/cell_type_quant/` (​Normalized expression matrices across cell types.)
+- ​​Poly(A) Site and APA Event Analysis​​
+  - ​Poly(A) Sites​​: `example/result/APA/Annotation/Selected_PAS_sites.txt`
+  - ​​Independent APA Events​​: `example/result/APA/Annotation/Independent_APA_events.txt`
+  - ​APA Usage Matrices​​: `example/result/APA/cell_type_quant/`
+- ​​RNA Editing Analysis Results​​
+  - ​Editing Level Matrices​​: `example/result/editing/cell_type_quan/`
 
 
 ## Getting help 📬

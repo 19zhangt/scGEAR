@@ -15,8 +15,9 @@ run_expression_analysis <- function(bam_data_=bam_data, args_=args, log_=log_fil
     ##
     submetadata <- as.data.frame(bam_data_$bam_cell_anno)
     rownames(submetadata) <- paste0(submetadata$pool, "_", gsub("-[0-9]+", "", submetadata$barcode))
+
     data.list <- pbmcapply::pbmclapply(matrix_index, function(f_matrix_index){
-        f_path <- sprintf(sprintf("%s/filtered_feature_bc_matrix", dirname(f_matrix_index$bamfile)))
+        f_path <- sprintf(sprintf("%s/filtered_feature_bc_matrix", dirname(f_matrix_index$bam_dedup_path)))
         pool_data <- Read10X(f_path)
         colnames(pool_data) <- gsub("-[0-9]+", "", colnames(pool_data))
         colnames(pool_data) <- paste0(f_matrix_index$pool, "_", colnames(pool_data))
@@ -24,10 +25,11 @@ run_expression_analysis <- function(bam_data_=bam_data, args_=args, log_=log_fil
         table(col_index)
         pool_data <- pool_data[, col_index]
         return_data <- CreateSeuratObject(counts = pool_data)
-        return_data
+        return(return_data)
     }, mc.cores = min(as.numeric(args_$threads), length(matrix_index)))
+
     ##
-    merged.object <- merge(data.list[[1]], data.list[2:length(data.list)])
+    merged.object <- base::merge(data.list[[1]], data.list[2:length(data.list)])
     merged.object <- JoinLayers(merged.object)
     tmp_pool_sm <- merged.object[['RNA']]$counts
     

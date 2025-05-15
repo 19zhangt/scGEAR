@@ -1,19 +1,25 @@
 name: SERA
+
 channels:
   - conda-forge
   - bioconda
   - defaults
+  
 dependencies:
   # R packages
   - r-base=4.2.2            # R programming language
-  
+  - r-systemfonts
+  - r-devtools
+  - r-hmisc
+
   # Python packages
   - python=3.9               # Python interpreter
   - pip=23.0.1
   - pip:
     - pysam==0.21.0           # SAM/BAM file processing
     - tqdm==4.65.0            # Progress bars
-    - pandas==2.0.3           # Data analysis toolkit
+    - numpy==2.0.2
+    - pandas==2.2.3           # Data analysis toolkit
     - biopython==1.85         # Bioinformatics utilities
 
   # Command-line tools

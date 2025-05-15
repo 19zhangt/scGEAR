@@ -5,18 +5,17 @@
 # ------------------------------------------------------------------------------
 
 # Set global options
-argvs <- commandArgs(trailingOnly = T)  # argvs <- c("example/APA", "20")
+argvs <- commandArgs(trailingOnly = T)
 set.seed(123)
 
 # Load required libraries
-suppressMessages(library(tidyverse))
-suppressMessages(library(GenomicRanges))
-suppressMessages(library(rtracklayer))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(GenomicRanges))
+suppressPackageStartupMessages(library(rtracklayer))
 
 # Define file paths
 data_dir <- argvs[1]
-f_threads <- argvs[2]
-
+f_threads <- "4" # argvs[2]
 
 # DEFINE CUSTOM FUNCTIONS
 para_extract <- function(chr_strand, input_data, site_dist, tmp_dir){
@@ -83,10 +82,10 @@ para_out <- function(input_data, site_dist, thread, tmp_dir){
 
 ## loading data ----------------------------------------------------------------
 known_cs1 <- read.table(sprintf("%s/PAS_source/refSeq/refseq_tts_in_last_exon.bed", data_dir), sep = "\t")
-known_cs1 <- unique(known_cs1[, 1:6]) # 56208
+known_cs1 <- unique(known_cs1[, 1:6])
 
 known_cs2 <- read.table(sprintf("%s/PAS_source/polyA_DB/UCSC_polyDB_in_last_exon.bed", data_dir), sep = "\t")
-known_cs2 <- unique(known_cs2[, 1:6]) # 33908
+known_cs2 <- unique(known_cs2[, 1:6])
 
 known_cs <- rbind(known_cs1[, 1:6], known_cs2[, 1:6]) %>% unique()
 known_cs$V4 <- paste0(known_cs$V1, ":", known_cs$V3, ":", known_cs$V6)
@@ -107,11 +106,10 @@ colnames(all_sites) <- c("chr", "start", "end", "name", "count", "strand")
 nrow(all_sites)
 
 tmp_dist <- abs(diff(all_sites$end))
-# hist(tmp_dist[tmp_dist < 1000 & tmp_dist > 10], breaks = 500, xlim = c(10,300))
 
 nrow(all_sites)
 clean_all_sites <- para_out(input_data = all_sites, site_dist = 200, 
-                            thread = as.numeric(f_threads), tmp_dir = data_dir) ## 141138 --> 75584
+                            thread = as.numeric(f_threads), tmp_dir = data_dir)
 nrow(clean_all_sites)
 
 
@@ -141,7 +139,7 @@ colnames(anno_res) <- c("site_chr", "site_start", "site_end", "site_name", "site
                         "LE_strand", "LE_transcript")
 
 table(table(anno_res$site_name))
-table(anno_res$site_name)[table(anno_res$site_name)==2]
+
 anno_res$gene <- gsub(":I[0-9]+", "", anno_res$LE_name)
 anno_res$annotation <- gene_annotation[anno_res$gene, "V6"]
 head(anno_res)
@@ -175,7 +173,7 @@ table(select_anno_res$APA_type)
 
 PAS_num <- table(select_anno_res$LE_name[select_anno_res$APA_type=="TUTR"])
 PAS_num[PAS_num > 10] <- 10
-pie(table(PAS_num))
+# pie(table(PAS_num))
 sum(PAS_num==2)/length(PAS_num)
 
 select_anno_res <- select_anno_res %>%
@@ -276,7 +274,7 @@ exons_by_UTR <- pbmcapply::pbmclapply(names(isoform_transcript), function(x){
     }else{
         return(reduce(unlist(exons_by_transcript[isoform_transcript[[x]][,2]])[, 1]))
     }
-}, mc.cores = as.numeric(f_threads), mc.preschedule = TRUE)
+}, mc.cores = as.numeric(f_threads), mc.preschedule = FALSE)
 names(exons_by_UTR) <- names(isoform_transcript)
 
 
@@ -346,7 +344,7 @@ select_anno_tmp1 <- pbmcapply::pbmclapply(
     X = seq_along(valid_indices),
     FUN = PAS_structure_info_optimized,
     mc.cores = as.numeric(f_threads),
-    mc.preschedule = TRUE  
+    mc.preschedule = FALSE  
 ) %>% data.table::rbindlist() %>% dplyr::distinct()
 select_anno_tmp1 <- as.data.frame(select_anno_tmp1)
 

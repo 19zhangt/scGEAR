@@ -3,30 +3,14 @@
 # Author: Ting Zhang and Ruofan Ding
 # Date: 2025-04-20
 
-# Load required packages with error handling
-required_packages <- c("BiocManager", "devtools", "data.table", "pbmcapply", 
-                       "vroom", "Hmisc", "reshape2", "seqinr", "stringr", 
-                       "DescTools", "argparse", "Matrix", "Seurat")
-suppressPackageStartupMessages({
-    for (pkg in required_packages) {
-        if (!require(pkg, character.only = TRUE)) {
-            install.packages(pkg)
-        }
-    }
-    if (!require("bedtoolsr", character.only = TRUE)) {
-        devtools::install_github("PhanstielLab/bedtoolsr")
-    }
-    if (!require("GenomicRanges", character.only = TRUE)) {
-        BiocManager::install("GenomicRanges")
-    }
-    if (!require("rtracklayer", character.only = TRUE)) {
-        BiocManager::install("rtracklayer")
-    }
-    library(argparse)
-    library(data.table)
-    library(stringr)
+options(error = function() {
+  traceback(2)
+  if (!interactive()) quit(save = "no", status = 1, runLast = FALSE)
 })
 
+suppressPackageStartupMessages(library(argparse))
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(stringr))
 
 # Defining the conversion function
 convert_logical <- function(x) {
@@ -54,15 +38,15 @@ initialize_parser <- function() {
                         help = "Unique cell barcodes assigned to each sample within each cluster.")
     parser$add_argument("--baminfo", type = "character", required = TRUE,
                         help = "Directory containing Cell Ranger outputs for each pool.")
-    parser$add_argument("--remove_duplicates", type=convert_logical, default = FALSE,
+    parser$add_argument("--remove_duplicates", type = "character", default = "FALSE", required = FALSE,
                         help = "Logical parameters, accept TRUE/T or FALSE/F (case insensitive).")
     
     # Reference file
-    parser$add_argument("--genome_fa", type = "character", required = TRUE,
+    parser$add_argument("--genome_fa", type = "character", required = FALSE,
                         help = "Path to genome FASTA file.")
     
     # Processing parameters
-    parser$add_argument("--REDIportal_anno", type = "character", required = TRUE,
+    parser$add_argument("--REDIportal_anno", type = "character", required = FALSE,
                         help = "Path to REDIportal annotation file (tab.gz format).")
     parser$add_argument("--read_strand", type = "integer", choices = c(0, 1), default = 1,
                         help = "Strand orientation (0=unstranded, 1=stranded)")
@@ -77,19 +61,19 @@ initialize_parser <- function() {
 
 #' Validate input file existence
 #' @param path Path to validate
-#' @param name Human-readable name for error messages
-validate_input_file <- function(path, name) {
+#' @param file_name Human-readable file_name for error messages
+validate_input_file <- function(path, file_name) {
     if (!file.exists(path)) {
-        stop(name, " not found at: ", path)
+        stop(file_name, " not found at: ", path)
     }
 }
 
 #' Validate input directory existence
 #' @param path Path to validate
-#' @param name Human-readable name for error messages
-validate_input_dir <- function(path, name) {
+#' @param file_name Human-readable file_name for error messages
+validate_input_dir <- function(path, file_name) {
     if (!dir.exists(path)) {
-        stop(name, " not found at: ", path)
+        stop(file_name, " not found at: ", path)
     }
 }
 
@@ -111,7 +95,7 @@ process_mode <- function(gear, bam_data_, args_) {
         }
     }
 
-    if(args_$remove_duplicates){
+    if(args_$remove_duplicates %in% c("TRUE", "T")){
         ## remove duplicates for each raw pooled bam file
         bam_data_$bam_anno <- remove_dups_pools2(bam_anno_ = bam_data_$bam_anno, 
                                                 parThreads_ = args_$threads, 
@@ -156,31 +140,21 @@ process_mode <- function(gear, bam_data_, args_) {
 }
 
 
-args <- list(
-    mode = "all",
-    cellinfo = "example/cell_annotation.csv",
-    baminfo = "example/bam_list.csv",
-    remove_duplicates = TRUE,
-    genome_fa = "/media/iceland/share/Index/Genome_index/Human_hg38/GRCh38.primary_assembly.genome.fa",
-    REDIportal_anno = "reference/REDIportal_noRSid.tab.gz",
-    py2_path = "python2",
-    read_strand = as.integer("1"),
-    threads = as.integer("4"),
-    outdir = "example"
-)
-
-
 # Main execution flow ---------------------------------------------------------
 main <- function() {
     # Parse command line arguments
     parser <- initialize_parser()
     args <- parser$parse_args()
-    
+
+    corenum  <- parallel::detectCores() - 1
+    args$threads <- min(as.numeric(args$threads), corenum)
+
     # Parameter calibration
     if (!args$mode %in% c("expression", "APA", "editing", "all")) {
         stop("Usage: Rscript SERA.R --mode <mode>\n  mode options: expression / APA / editing / all")
     }
     
+    print(args)
     # Define the folder
     target_dirs <- switch(args$mode,
                           "expression" = paste0(args$outdir, "/expression"),
@@ -191,35 +165,25 @@ main <- function() {
     
     # Interactive deletion function
     confirm_removal <- function(dir_path) {
-        response <- tolower(readline(prompt = paste0(
-            dir_path, " already exists. Delete existing directory? (y/n)"
-        )))
-        
-        if (response == "y") {
-            unlink(dir_path, recursive = TRUE)
-            message("Deleted directories: ", dir_path)
-            return(TRUE)
-        } else if (response == "n") {
-            message("Keep the existing directory and exit the script")
-            return(FALSE)
-        } else {
-            stop("Invalid input, please enter y or n")
-        }
+        # unlink(dir_path, recursive = TRUE)
+        message("Deleted directories: ", dir_path)
+        return(TRUE)
     }
     
+    print(target_dirs)
     # Main process control
-    for (dir in target_dirs) {
-        if (dir.exists(dir)) {
+    for (tmp_dir in target_dirs) {
+        if (dir.exists(tmp_dir)) {
             message("\n>>> Conflict Detection <<<")
-            success <- confirm_removal(dir)
+            success <- confirm_removal(tmp_dir)
             if (!success) quit(save = "no", status = 1)
         }
         # Create output directory
-        dir.create(dir, recursive = TRUE)
-        if (dir.exists(dir)) {
-            message("Creating output directory: ", dir)
+        dir.create(tmp_dir, recursive = TRUE)
+        if (dir.exists(tmp_dir)) {
+            message("Creating output directory: ", tmp_dir)
         } else {
-            stop("Directory creation failed: ", dir)
+            stop("Directory creation failed: ", tmp_dir)
         }
     }
     

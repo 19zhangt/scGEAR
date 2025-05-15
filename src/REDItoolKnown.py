@@ -23,7 +23,7 @@ import sys, os, time, math, random, getopt, operator, string, errno
 try: import pysam
 except: sys.exit('Pysam module not found.')
 from multiprocessing import Process, Queue
-from Queue import Empty
+from queue import Empty
 
 pysamVersion=pysam.__version__
 
@@ -34,7 +34,7 @@ version='1.3'
 pid=str(os.getpid()+random.randint(0,999999999))
 
 def usage():
-	print """
+	print("""
 USAGE: python REDItoolKnown.py [options]
 Options:
 -i		BAM file
@@ -82,12 +82,12 @@ Options:
 	- For Tophat2 use 50
 	- For GSNAP use 30
 
-"""%(pid)
+"""%(pid))
 
 try:
 	opts, args = getopt.getopt(sys.argv[1:], "i:f:k:t:o:c:q:m:O:s:edpuT:B:Sv:n:EP:r:hHIXG:K:l:C:F:x:g:U")
 except getopt.GetoptError as err:
-	print str(err) # will print something like "option -a not recognized"
+	print(str(err)) # will print something like "option -a not recognized"
 	usage()
 	sys.exit(2)
 
@@ -257,7 +257,7 @@ def pid_exists(pid):
         return False
     try:
         os.kill(pid, 0)
-    except OSError, e:
+    except OSError as e:
         return e.errno == errno.EPERM
     else:
         return True
@@ -361,9 +361,9 @@ def BaseCount(seq,ref):
 	subs=[]
 	subv=[]
 	for i in seq.upper():
-		if b.has_key(i): b[i]+=1
+		if i in b: b[i]+=1
 	for i in b:
-		if not b.has_key(ref): continue
+		if ref not in b: continue
 		if b[i]!=0 and i!=ref:
 			vv=float(b[i])/(b[i]+b[ref])
 			subv.append((b[i],vv,ref+i))
@@ -414,7 +414,7 @@ def comp(s):
 	a={'A':'T','T':'A','C':'G','G':'C'}
 	ss=''
 	for i in s.upper():
-		if a.has_key(i): ss+=a[i]
+		if i in a: ss+=a[i]
 		else: ss+='N'
 	return ss	
 
@@ -524,7 +524,7 @@ for j in fidxinfo:
 fidxinfo.close()
 # in rna-seq
 rnof=[]
-for i in rrefs.keys():
+for i in list(rrefs.keys()):
 	if i not in frefs: sys.stderr.write('WARNING: Region %s in RNA-Seq not found in reference file.\n' %(i))
 ##################################
 
@@ -568,8 +568,8 @@ if expos:
 #mainbam.close()
 #dicregions=dict([(regions[x],regionslens[x]) for x in range(len(regions))])
 #chrs=[x for x in regions if x not in nochrs]
-dicregions=dict(rrefs.items())
-chrs=[x for x in dicregions.keys() if x not in nochrs]
+dicregions=dict(list(rrefs.items()))
+chrs=[x for x in list(dicregions.keys()) if x not in nochrs]
 sys.stderr.write('Analysis on %i regions.\n' %(len(chrs)))
 
 if infolder!='': outfolder=os.path.join(outfolder_,'known_%s_%s' %(infolder,pid))
@@ -654,7 +654,7 @@ def exploreBAM(myinput):
 			# else explore bam to find exact positions
 			for pileupcolumn in bam.pileup(chr,startk,endk,stepper='nofilter', max_depth=MAX_DEPTH):
 				if not startk<=pileupcolumn.reference_pos<=endk: continue
-				if not kdic.has_key(pileupcolumn.reference_pos+1): continue
+				if pileupcolumn.reference_pos+1 not in kdic: continue
 				ref=fasta.fetch(chr,pileupcolumn.reference_pos,pileupcolumn.reference_pos+1).upper()
 				seq,qual,strand,squal,blatc='',0,'',[],''
 				if rmsh:
@@ -668,7 +668,7 @@ def exploreBAM(myinput):
 					if pileupread.alignment.is_supplementary: continue
 					if pileupread.alignment.has_tag('SA'): continue
 					# escludi posizioni introniche nei pressi di splice sites
-					if exss and di.has_key(pileupcolumn.reference_pos+1): continue
+					if exss and pileupcolumn.reference_pos+1 in di: continue
 					# multiple hit
 					if exh:
 						if pileupread.alignment.is_secondary: continue
@@ -754,7 +754,7 @@ def exploreBAM(myinput):
 							elif pileupread.alignment.is_read2: rt=2
 							else: rt=0
 							rname=pileupread.alignment.query_name+'_%i'%(rt)
-							if d.has_key(rname): blatc+='0' #continue
+							if rname in d: blatc+='0' #continue
 							else: blatc+='1'
 						# se la base e' diversa dal reference
 						# se in regione omopolimerica scarta

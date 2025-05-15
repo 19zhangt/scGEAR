@@ -1,7 +1,6 @@
 
-library(tidyverse)
-library(pbmcapply)
-
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(pbmcapply))
 
 run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
     #' Run complete RNA editing analysis pipeline
@@ -19,7 +18,6 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
                              args_$genome_fa,
                              args_$outdir))
     
-    
     bam_run_dir <- paste0(args_$outdir, "/BAMcount")
     dir.create(bam_run_dir)
     apply(bam_data_$bam_anno[, c("pool", "bam_dedup_path")], 1, function(x){
@@ -31,8 +29,7 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
                                  args_$threads, bam_run_dir, x[1], basename(x[2]), bam_run_dir, x[1]))
         system(command = sprintf("samtools index -@ %s %s/%s/reassigned.bam",
                                  args_$threads, bam_run_dir, x[1]))
-        system(command = sprintf("rm %s/%s/%s.featureCounts.bam",
-                                 bam_run_dir, x[1], basename(x[2])))
+        # system(command = sprintf("rm %s/%s/%s.featureCounts.bam", bam_run_dir, x[1], basename(x[2])))
     })
     
     apply(bam_data_$bam_anno[, c("pool", "bam_dedup_path")], 1, function(x){
@@ -52,7 +49,7 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
     
     
     PAS_anno <- read.table(sprintf("%s/Annotation/KeepPAS_data_annotation.txt", args_$outdir), header = T)
-    meta_data <- bam_data$bam_cell_anno
+    meta_data <- bam_data_$bam_cell_anno
     ct_out_dir <- sprintf("%s/PAS_selection", args_$outdir)
     dir.create(ct_out_dir)
     
@@ -131,7 +128,7 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
         }
         
         cell_types <- unique(ind_info$cell_type)
-        return_list <- mclapply(cell_types, fun_ct_ratio, mc.cores = 2)
+        return_list <- pbmcapply::pbmclapply(cell_types, fun_ct_ratio, mc.cores = min(length(cell_types), args_$threads))
         unlist(return_list)
     })
     
@@ -426,12 +423,12 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
     })
     
     ## Get indenpendent APA events
-    data_dir <- "example/APA/PAS_quantification/"
+    data_dir <- sprintf("%s/PAS_quantification", args_$outdir)
     rds_list <- list.files(data_dir, pattern = ".rds")
     rds_list <- rds_list[grepl("pseudobulk_", rds_list)]
     
     loadRDS <- function(x){
-        tmp_quant <- readRDS(paste0(data_dir, x))
+        tmp_quant <- readRDS(paste0(data_dir, "/", x))
         if(nrow(tmp_quant) > 0){
             src_name <- gsub(".rds", "", x)
             tmp_quant <- tmp_quant %>% mutate(source=src_name) %>% 
@@ -440,14 +437,13 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
             tmp_quant
         }
     }
-    PAS_quants <- mclapply(rds_list, loadRDS, mc.cores = 30, mc.preschedule = TRUE) %>% bind_rows()
+    PAS_quants <- pbmcapply::pbmclapply(rds_list, loadRDS, mc.cores = min(length(rds_list), args_$threads), mc.preschedule = TRUE) %>% bind_rows()
     gc()
-    ## 104,355,317 | 131,296,197 | 171,142,605
-    
+
+    ##
     PAS_quants_matrix_raw <- reshape2::dcast(PAS_quants, formula = ensembl~source, 
                                              value.var = "counts") %>% column_to_rownames('ensembl')
     gc()
-    ## 26000 13089 | 35528 13646
     
     na1_lower_index <- apply(PAS_quants_matrix_raw, 1, function(x){sd(as.numeric(x), na.rm = T)!=0})
     table(na1_lower_index)
@@ -519,7 +515,7 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
             names(tmp_index) <- rownames(cor_df)
             out_index <- no_cor_PAS_iter(num_ind = tmp_index, cor_df = cor_df)
             out_relation <- no_cor_PAS_list(num_ind = tmp_index, cor_df = cor_df)
-            write.table(out_relation, "example/APA/Annotation/00PAS_cor.txt", 
+            write.table(out_relation, sprintf("%s/Annotation/00PAS_cor.txt", args_$outdir),
                         quote = F, sep = "\t", append = T, row.names = F, col.names = F)
             return(names(out_index))
         }else{
@@ -533,18 +529,18 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
     ratio_matrix_group <- sapply(strsplit(rownames(PAS_data), ":"), function(x){x[1]})
     use_PAS <-  unique(ratio_matrix_group)
     
-    PAS_clean <- mclapply(use_PAS, APA_PAS_select, mc.cores = 20)
+    PAS_clean <- pbmcapply::pbmclapply(use_PAS, APA_PAS_select, mc.cores = min(length(use_PAS), args_$threads))
     PAS_clean <- unlist(PAS_clean) %>% unique()
     
-    out_file <- "example/APA/Annotation/Independent_PAS_set.txt"
+    out_file <- sprintf("%s/Annotation/Independent_PAS_set.txt", args_$outdir)
     write.table(PAS_clean, out_file, row.names = F, col.names = F, quote = F)
     
     dim(PAS_data)
-    write.table(rownames(PAS_data), "example/APA/Annotation/Independent_used_pas_utr.txt", 
+    write.table(rownames(PAS_data), sprintf("%s/Annotation/Independent_used_pas_utr.txt", args_$outdir), 
                 row.names = F, col.names = F, quote = F)
     
     ## Generate unified annotation
-    raw_anno <- read.table(sprintf("example/APA/Annotation/Selected_PAS_sites.txt"), header = T) 
+    raw_anno <- read.table(sprintf("%s/Annotation/Selected_PAS_sites.txt", args_$outdir), header = T) 
     length(unique(raw_anno$gene_name))
     length(unique(raw_anno$gene_name[raw_anno$LE_type=="TUTR"]))
     
@@ -578,10 +574,14 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
     # LE_PAS_UTR_anno <- subset(PAS_UTR_anno, LE_name%in%ALE_genes)
     # LE_PAS_UTR_anno <- subset(LE_PAS_UTR_anno, !site_name%in%LE_UTR_anno$site_name)
     
-    ## 
-    multi_PAS_anno$site_name <- paste0(multi_PAS_anno$site_name, ":PPUI")
     PAS_UTR_anno$site_name <- paste0(PAS_UTR_anno$site_name, ":PDUI")
-   
+    
+    ## 
+    if(nrow(multi_PAS_anno) > 0){
+        multi_PAS_anno$site_name <- paste0(multi_PAS_anno$site_name, ":PPUI")
+        PAS_UTR_anno <- rbind(PAS_UTR_anno, multi_PAS_anno)
+    }
+
     if(nrow(LE_UTR_anno) > 0){
         #
         ALE_anno <- LE_UTR_anno %>% group_by(LE_name) %>% summarise(chr=unique(chr),
@@ -597,30 +597,29 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
         
         table(table(LE_UTR_anno$LE_name))
         multi_LE_UTR_anno <- subset(LE_UTR_anno, LE_name%in%multiALE_name)
-        multi_LE_UTR_anno$site_name <- paste0(multi_LE_UTR_anno$site_name, ":PIUI")
+        if(nrow(multi_LE_UTR_anno) > 0){
+            multi_LE_UTR_anno$site_name <- paste0(multi_LE_UTR_anno$site_name, ":PIUI")
+            ALE_anno <- rbind(ALE_anno, multi_LE_UTR_anno)
+        }
         
-        merge_anno <- rbind(multi_PAS_anno, PAS_UTR_anno, multi_LE_UTR_anno, ALE_anno)
-        
+        merge_anno <- rbind(PAS_UTR_anno, ALE_anno)
     } else{
-        merge_anno <- rbind(multi_PAS_anno, PAS_UTR_anno) 
+        merge_anno <- PAS_UTR_anno
     }
     #
     clean_anno <- unique(merge_anno)
-    
-    nrow(clean_anno)
-    
     #
-    filtered_anno <- read.table("example/APA/Annotation/Independent_PAS_set.txt")
+    filtered_anno <- read.table(sprintf("%s/Annotation/Independent_PAS_set.txt", args_$outdir))
     
     # ggvenn::ggvenn(list("A"=filtered_anno$V1, "B"=clean_anno$site_name))
     out_clean_anno <- subset(clean_anno, site_name%in%filtered_anno$V1)
     
     table(table(out_clean_anno$site_name))
-    write.table(out_clean_anno, "example/APA/Annotation/Independent_APA_events.txt", row.names = F, sep = "\t", quote = F)
+    write.table(out_clean_anno, sprintf("%s/Annotation/Independent_APA_events.txt", args_$outdir), row.names = F, sep = "\t", quote = F)
     
     ## Generate matrix 
-    rds_list <- list.files("example/APA/PAS_quantification/", pattern = "rds", full.names = T)
-    dir.create("example/APA/cell_type_quant")
+    rds_list <- list.files(sprintf("%s/PAS_quantification/", args_$outdir), pattern = "rds", full.names = T)
+    dir.create(sprintf("%s/cell_type_quant", args_$outdir))
     pbmcapply::pbmclapply(rds_list, function(rds_file){
         clean_anno <- out_clean_anno
         ## PAS annotation and genomic location
@@ -642,8 +641,8 @@ run_apa_analysis <- function(bam_data_=bam_data, args_=args, log_=log_file) {
                 column_to_rownames('ensembl')
             
             out_table <- inner_join(phenotype_using, ratio_matrix_raw %>% rownames_to_column("Name"), by="Name")
-            write.table(out_table, file = sprintf("example/APA/cell_type_quant/%s.txt", 
-                                                  gsub("pseudobulk_|.rds", "", basename(rds_file))), row.names = F, sep = "\t", quote = F) 
+            write.table(out_table, file = sprintf("%s/cell_type_quant/%s.txt", args_$outdir, gsub("pseudobulk_|.rds", "", basename(rds_file))), 
+            row.names = F, sep = "\t", quote = F) 
         }
     })
 }

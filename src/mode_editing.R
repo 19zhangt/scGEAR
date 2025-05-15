@@ -180,8 +180,7 @@ detect_editing_by_reditools_13m_noSNP_for_ind <- function(bam_cell_anno_= bam_ce
                                                           min_base_quality_=30,
                                                           min_mapping_quality = 30,
                                                           parThreads_=3, 
-                                                          subThreads_=20, 
-                                                          python2.7_exe_="/usr/bin/python2.7" ){
+                                                          subThreads_=20){
   start_time_i <- Sys.time()
   if(!dir.exists(RE_out_dir_)){
     dir.create(RE_out_dir_, showWarnings = TRUE, recursive = TRUE)
@@ -200,7 +199,7 @@ detect_editing_by_reditools_13m_noSNP_for_ind <- function(bam_cell_anno_= bam_ce
   bam_ind <- bam_ind[out_exist==FALSE,]
   Sys.sleep(1)
   # 
-  tmp_out <- mclapply(1:nrow(bam_ind), function(i){
+  tmp_out <- pbmcapply::pbmclapply(1:nrow(bam_ind), function(i){
     ind_i <- bam_ind[i,]$donor
     bam_i <- bam_ind[i]$bam_path
     if(!file.exists(bam_i)){ warnings("  ===> i: ",i," | bam file doesn't exist!");return(i) }
@@ -208,7 +207,7 @@ detect_editing_by_reditools_13m_noSNP_for_ind <- function(bam_cell_anno_= bam_ce
     Re_out_i <- bam_ind[i]$RE_out_path
     
     # Add -S, only consider the reads of inferred strand
-    system(paste0(python2.7_exe_, " src/REDItoolKnown.py -i ",
+    system(paste0("python src/REDItoolKnown.py -i ",
                   bam_i," -f ",genome_fa_ ," -l ",REDIportal_tab_, 
                   " -S -r 5 -t ",subThreads_," -c ",min_cov_," -q ",min_base_quality_, " -m ", min_mapping_quality ," -s ",read_strand_," -v ",min_edited_reads," -n 0 -o ",Re_out_i))
     
@@ -368,7 +367,7 @@ extract_cell_infomation_poolID <- function(pos_bed_ ="ed_refined.bed",
     if(!dir.exists(pileup_splited_dir)){dir.create(pileup_splited_dir, recursive = T)}
     
     # split chrom of bam file:
-    mclapply(paste0("chr", c(1:22, "X", "Y") ), function(c){
+    pbmcapply::pbmclapply(paste0("chr", c(1:22, "X", "Y") ), function(c){
       print(c)
       system(paste0( "samtools view -b ",bam_file_, " ",c," >",bam_splited_dir,c,".bam" ))
       return()
@@ -377,7 +376,7 @@ extract_cell_infomation_poolID <- function(pos_bed_ ="ed_refined.bed",
     
     # start samtools mpileup, parallel:
     message("  ==> In total of ",length(splited_bams), " bam files plited by chromosome")
-    tmp_out <- mclapply(1:length(splited_bams), function(i){
+    tmp_out <- pbmcapply::pbmclapply(1:length(splited_bams), function(i){
       message("   ==> running splited files: ",i,"/",length(splited_bams)," | ", date())
       bam_i <- splited_bams[i]
       pileup_out_i <- paste0(pileup_splited_dir, str_remove(basename(bam_i), regex(".bam$")),".txt")
@@ -409,7 +408,7 @@ extract_cell_infomation_poolID <- function(pos_bed_ ="ed_refined.bed",
     
     # parallel:
     message("  ==> In total of ",length(splited_beds), "files with splited lines: ", bed_splited_lines)
-    a <- mclapply(1:length(splited_beds), function(i){
+    a <- pbmcapply::pbmclapply(1:length(splited_beds), function(i){
       # message("   ==> running splited files: ",i,"/",length(splited_beds)," | ", date())
       bed_i <- paste0(bed_splited_dir, splited_beds[i])
       pileup_out_i <- paste0(pileup_splited_dir, splited_beds[i])
@@ -456,13 +455,13 @@ refine_summary_pileup_poolID_Nathan <- function(bam_cell_anno_,
     names(pileup) <- c("chrom", "position", "ref", "readCount", "bases","baseQuality", "barcode", "ReadGroup")
     # remove "^*" and "$", note , first remove ^*, then remove $, due to ^$
     message("  ==> Start remove read start and end sign, total of [", nrow(pileup[str_detect(bases, regex("[$\\^]"))]), "] records")
-    pileup[str_detect(bases, regex("[$\\^]")),"bases"] <- unlist(mclapply(pileup[str_detect(bases, regex("[$\\^]"))]$bases , function(x){ str_remove_all(str_remove_all(x,regex("[\\^].{1}")), fixed("$")) }, mc.cores = round(parThreads_/2,0) ))
+    pileup[str_detect(bases, regex("[$\\^]")),"bases"] <- unlist(pbmcapply::pbmclapply(pileup[str_detect(bases, regex("[$\\^]"))]$bases , function(x){ str_remove_all(str_remove_all(x,regex("[\\^].{1}")), fixed("$")) }, mc.cores = round(parThreads_/2,0) ))
     # remove indels:
     message("  ==> Start remove read indels, total of [", nrow( pileup[str_detect(bases, regex('[+-]')),] ), "] records")
     
     indel_bases <- pileup[str_detect(bases, regex('[+-]'))]$bases
     if(length(indel_bases)>0){
-      pileup[str_detect(bases, regex('[+-]')),"bases"] <- unlist(mclapply(1:length(indel_bases), function(x){ 
+      pileup[str_detect(bases, regex('[+-]')),"bases"] <- unlist(pbmcapply::pbmclapply(1:length(indel_bases), function(x){ 
         x <- indel_bases[x]
         x_char = str_split_1(x,""); 
         num_pos = as.numeric(str_match_all(x, regex("[0-9]{1,10}"))[[1]])
@@ -501,11 +500,11 @@ refine_summary_pileup_poolID_Nathan <- function(bam_cell_anno_,
     #
     pileup$bases <- unlist(lapply(str_sub_all(pileup$bases, junction_pos ), function(x){ paste0(x, collapse = "") }))
     pileup$baseQuality <- unlist(lapply(str_sub_all(pileup$baseQuality, junction_pos), function(x){ paste0(x, collapse = "") }))
-    pileup$barcode <- unlist(mclapply(1:nrow(pileup), function(i){
+    pileup$barcode <- unlist(pbmcapply::pbmclapply(1:nrow(pileup), function(i){
       cell_id_splited <- str_split_1(pileup[i,]$barcode, ",")
       return( paste0(cell_id_splited[ setdiff(1:length(cell_id_splited), no_junction_pos[[i]][,1] ) ] , collapse=",") )
     }, mc.cores = parThreads_))
-    # pileup$ReadGroup <- unlist(mclapply(1:nrow(pileup), function(i){
+    # pileup$ReadGroup <- unlist(pbmcapply::pbmclapply(1:nrow(pileup), function(i){
     #   rd_i_splited <- unlist(lapply(str_split(pileup[i,]$ReadGroup,",")[[1]], function(x){ str_split(x,":")[[1]][1] }))
     #   return( paste0(rd_i_splited[ setdiff(1:length(rd_i_splited), no_junction_pos[[i]][,1] ) ] , collapse=",") )
     # }, mc.cores = parThreads_))
@@ -515,7 +514,7 @@ refine_summary_pileup_poolID_Nathan <- function(bam_cell_anno_,
     if(nrow(pileup)==0){return()}
     
     message(" ==> filter reads with low quality with cutoff: ",base_quality_score_cutoff_ )
-    pileup <- rbindlist(mclapply(1:nrow(pileup), function(i){
+    pileup <- rbindlist(pbmcapply::pbmclapply(1:nrow(pileup), function(i){
       quality_score_i <- DescTools::CharToAsc(str_split_1(pileup[i]$baseQuality,""))
       if(all(quality_score_i>=base_quality_score_cutoff_)){
         return(cbind(pileup[i], data.table(removed_reads=0)))
@@ -535,7 +534,7 @@ refine_summary_pileup_poolID_Nathan <- function(bam_cell_anno_,
     
     # procell ReadGroup
     # combine barcode with ReadGroup:
-    pileup$rg_cell_id <- unlist(mclapply(1:nrow(pileup), function(i){
+    pileup$rg_cell_id <- unlist(pbmcapply::pbmclapply(1:nrow(pileup), function(i){
       cell_id_i <- unlist(str_split(pileup[i,]$barcode,",")[[1]])
       cell_id_splited_dt <- bam_cell_anno_x[cell_id_i, on="barcode"]
       cell_id_splited_dt[is.na(pool), "pool"] <- na.omit(cell_id_splited_dt[1,])$pool
@@ -543,7 +542,7 @@ refine_summary_pileup_poolID_Nathan <- function(bam_cell_anno_,
       return(paste0(paste0(cell_id_splited_dt$pool, "#", cell_id_splited_dt$barcode), collapse = ","))
     }, mc.cores = parThreads_))
     #
-    cell_reads <- rbindlist(mclapply(1:nrow(pileup), function(i){
+    cell_reads <- rbindlist(pbmcapply::pbmclapply(1:nrow(pileup), function(i){
       pileup_i <- pileup[i,]
       cell_reads_i <- as.data.table(table(pileup_i[,.(bases=str_split_1(pileup_i$bases, ""), barcode = str_split_1(pileup_i$rg_cell_id, ","))]))[N>0]
       names(cell_reads_i) <- c("base_pileup", "barcode", "num_reads")
@@ -603,14 +602,14 @@ cell_reads_summary <- function(cell_reads_path = "cell_reads.txt",
     #
     phenotypes <- unique(cell_reads[,.(phenotype_id, chrom, position, strand)])
     phenotypes$batch <- rep(1:parThreads,each =ceiling(nrow(phenotypes)/parThreads))[1:nrow(phenotypes)]
-    misMatch_pop_each_cell <- rbindlist(mclapply(1:parThreads, function(i){
+    misMatch_pop_each_cell <- rbindlist(pbmcapply::pbmclapply(1:parThreads, function(i){
       cell_reads[phenotypes[batch==i,]$phenotype_id, on="phenotype_id"][,.(misMatch_reads=sum(.SD[base_pileup!=ref]$num_reads), cov_reads=sum(.SD$num_reads) ),by=c("barcode", "phenotype_id")]
     }, mc.cores = parThreads))
     misMatch_pop_each_cell[,c("misMatch_prop"):=.(misMatch_reads/cov_reads )]
     misMatch_pop_each_cell <- merge(misMatch_pop_each_cell, phenotypes[,-c("batch")], by= "phenotype_id", sort=FALSE )[,.(phenotype_id, chrom, position,strand, barcode, misMatch_reads,cov_reads, misMatch_prop)]
     
     # 
-    # misMatch_pop_each_cell <- rbindlist(mclapply(1:nrow(phenotypes), function(i){
+    # misMatch_pop_each_cell <- rbindlist(pbmcapply::pbmclapply(1:nrow(phenotypes), function(i){
     #   cell_reads_i <- na.omit(cell_reads[phenotypes[i,]$phenotype_id, on=c("phenotype_id")])
     #   misMatch_pop_each_cell_i <- cell_reads_i[,.(misMatch_reads=sum(.SD[base_pileup!=ref]$num_reads), cov_reads=sum(.SD$num_reads) ),by="barcode"]
     #   misMatch_pop_each_cell_i[,c("misMatch_prop"):=.(misMatch_reads/cov_reads )]
@@ -627,7 +626,7 @@ cell_reads_summary <- function(cell_reads_path = "cell_reads.txt",
     cell_reads <- fread(cell_reads_path, header = TRUE, sep="\t")
     setindex(cell_reads, chrom, position)
     ed <- merge(ed, unique(cell_reads[,.(chrom, position)]), by=c("chrom", "position"),sort=FALSE )
-    misMatch_pop_each_cell <- rbindlist(mclapply(1:nrow(ed), function(i){
+    misMatch_pop_each_cell <- rbindlist(pbmcapply::pbmclapply(1:nrow(ed), function(i){
       ed_i <- ed[i,]
       cell_reads_i <- na.omit(cell_reads[ed_i, on=c("chrom", "position")])
       if(nrow(cell_reads_i)==0){return(NULL)}
@@ -692,14 +691,14 @@ cell_reads_summary <- function(cell_reads_path = "cell_reads.txt",
     
     phenotypes <- unique(gt_cell_reads[,.(phenotype_id, chrom, position, gt)])
     phenotypes$batch <- rep(1:parThreads,each =ceiling(nrow(phenotypes)/parThreads))[1:nrow(phenotypes)]
-    mutated_pop_each_cell <- rbindlist(mclapply(1:parThreads, function(i){
+    mutated_pop_each_cell <- rbindlist(pbmcapply::pbmclapply(1:parThreads, function(i){
       gt_cell_reads[phenotypes[batch==i,]$phenotype_id, on="phenotype_id"][,.(misMatch_reads=sum(.SD[base_pileup!=ref]$num_reads), cov_reads=sum(.SD$num_reads) ),by=c("barcode", "phenotype_id")]
     }, mc.cores = parThreads))
     mutated_pop_each_cell[,c("misMatch_prop"):=.(misMatch_reads/cov_reads )]
     mutated_pop_each_cell <- merge(mutated_pop_each_cell, phenotypes[,-c("batch")], by= "phenotype_id", sort=FALSE )[,.(phenotype_id, chrom, position, barcode, misMatch_reads,cov_reads, misMatch_prop, gt)]
     
     
-    # mutated_pop_each_cell <- rbindlist(mclapply(1:nrow(gt), function(i){
+    # mutated_pop_each_cell <- rbindlist(pbmcapply::pbmclapply(1:nrow(gt), function(i){
     #   gt_vars_i <- gt_vars[i,]
     #   gt_cell_reads_i <- na.omit(gt_cell_reads[gt_vars_i, on=c("phenotype_id")])
     #   if(nrow(gt_cell_reads_i)==0){return(NULL)}
@@ -737,7 +736,7 @@ filter_ed_by_cell_and_cov_ind <- function(bam_cell_anno_=bam_cell_anno,
   lapply(1:nrow(clusters), function(i){
     cluster_i <- clusters[i]$cell_type
     message("==> ",i," | ",cluster_i, " | mmp file: ",mmp_file_name," | ",date())
-    a <- mclapply(1:nrow(inds), function(j){
+    a <- pbmcapply::pbmclapply(1:nrow(inds), function(j){
       ind_j <- inds[j]$donor
       mmp_path_j <- paste0(mmp_out_dir, "/", cluster_i,"/",ind_j,"/",mmp_file_name)
       ed_filter_cell_out_path_j <- paste0(mmp_out_dir, "/", cluster_i,"/",ind_j,"/ed_filtered_cells.txt")
@@ -745,7 +744,7 @@ filter_ed_by_cell_and_cov_ind <- function(bam_cell_anno_=bam_cell_anno,
       if(file.exists(ed_filter_cell_out_path_j)){ file.remove(ed_filter_cell_out_path_j) }
       mmp_j <- fread(mmp_path_j, header = TRUE, sep="\t")
       phenotypes_j <- unique(mmp_j[,.(chrom, position, strand,phenotype_id)])
-      phenotypes_j$ed_type <- unlist(mclapply(phenotypes_j$phenotype_id, function(x){ x=str_split_fixed(x, "_", 5); return(paste0(x[3],x[4])) }, mc.cores = parThreads))
+      phenotypes_j$ed_type <- unlist(pbmcapply::pbmclapply(phenotypes_j$phenotype_id, function(x){ x=str_split_fixed(x, "_", 5); return(paste0(x[3],x[4])) }, mc.cores = parThreads))
       
       # if ed level>0, ed of covered cells >= 3:
       ed_j_1 <- mmp_j[phenotype_id %in% mmp_j[phenotype_id %in% mmp_j[misMatch_prop>0]$phenotype_id,][,.(cell_num=length(barcode)), by="phenotype_id"][cell_num>= min_num_covered_cells, ]$phenotype_id ]
@@ -825,7 +824,7 @@ merge_eds_ind_filtered <- function(bam_cell_anno_= bam_cell_anno,
           bam_cluster_i <- bam_cluster[cell_type== cluster_i]
           # Note that each cell_type person here may be different! So it has to be calculated separately!
           min_num_of_ind_i <- round(prop_of_ed_shared_inds *nrow(bam_cluster_i))
-          eds_i <- rbindlist(mclapply(1:nrow(bam_cluster_i), function(j){
+          eds_i <- rbindlist(pbmcapply::pbmclapply(1:nrow(bam_cluster_i), function(j){
             ed_j <- fread(bam_cluster_i[j]$ed_path); ed_j$donor <- bam_cluster_i[j]$donor
             # if(only_AG){ed_j <- ed_j[ed_type=="AG"]}
             ed_j <- ed_j[chrom %in% paste0("chr", c(1:22, "X", "Y"))]
@@ -853,7 +852,7 @@ merge_eds_ind_filtered <- function(bam_cell_anno_= bam_cell_anno,
           fwrite(eds_dcast_i, out_bed_AG_i, sep="\t", col.names = TRUE)
           rm(a)
           # dcast by chrom for numerous records:
-          a <- mclapply(1:length(chroms_i), function(j){
+          a <- pbmcapply::pbmclapply(1:length(chroms_i), function(j){
             chrom_j <- chroms_i[j]
             eds_j <- eds_i[chrom %in% chrom_j]
             eds_j$end=eds_j$position+1
@@ -897,7 +896,7 @@ run_editing_analysis <- function(bam_data_=bam_data, args_=args, log_) {
   
   out_dir <- args_$outdir
   parThreads <- args_$threads
-  py2_path <- args_$py2_path
+  # py2_path <- args_$py2_path
   REDIportal_tab <- "reference/REDIportal_noRSid.tab.gz"
   
   # Create output directories if they don't exist
@@ -957,8 +956,8 @@ run_editing_analysis <- function(bam_data_=bam_data, args_=args, log_) {
     min_base_quality_ = 30,
     min_mapping_quality = 30,
     parThreads_ = ifelse(round(parThreads/10) >= 1, round(parThreads/10), 1),
-    subThreads_ = ifelse(parThreads >= 10, 10, parThreads),
-    python2.7_exe_ = py2_path
+    subThreads_ = ifelse(parThreads >= 10, 10, parThreads)
+    # python2.7_exe_ = py2_path
   )
   message("detect_editing_by_reditools_13m_noSNP_for_ind running time: ", running_time)
   fwrite(data.table(type = "detect_editing", time = running_time), 

@@ -6,12 +6,6 @@
 
 
 # Set global variables
-
-# BAMFILELIST=example/APA/bam_list.csv
-# THREAD_NUM=4
-# REFGENOME="/media/iceland/share/Index/Genome_index/Human_hg38/GRCh38.primary_assembly.genome.fa"
-# OUTDIR=example/APA
-
 BAMFILELIST=$1
 THREAD_NUM=$2
 REFGENOME=$3
@@ -155,11 +149,10 @@ integrate_data() {
 # Main Execution Flow
 # --------------------------
 main() {
-    # process_refseq
-    # RefSeq_polyDB_mws
+    process_refseq
+    RefSeq_polyDB_mws
     detect_polya_tails
     integrate_data
-    
 }
 
 # Execute main function with timing
