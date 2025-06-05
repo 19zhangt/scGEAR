@@ -28,3 +28,4 @@ dependencies:
   - sinto=0.9.0            # Single-cell fragment file analysis
   - umi_tools=1.1.4        # UMI handling utilities
   - samtools=1.18          # SAM/BAM processing
+  - dos2unix
